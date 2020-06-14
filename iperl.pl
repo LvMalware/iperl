@@ -1,9 +1,14 @@
+#!/usr/bin/env perl
+
 use warnings;
 use Term::ReadLine;
 use Term::ANSIColor;
 
+#Display warnings
 $SIG{__WARN__} = \&handle_warnings;
+
 my $term = new Term::ReadLine 'IPerl';
+
 my $command;
 
 do
@@ -18,5 +23,5 @@ while ($command !~ /^exit(\(\))|;$/);
 
 sub handle_warnings
 {
-    print color('yellow'). "WARNING: " . color('reset') . shift . "\n" 
+    print color('yellow'). "WARNING: " . color('reset') . $_[0] . "\n" 
 }
