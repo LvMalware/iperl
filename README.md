@@ -3,7 +3,6 @@
 
 This is a simple script that aims to provide an easy and fun way to run a interactive Perl interpreter.
 
-![](header.png)
 
 ## Installation
 
