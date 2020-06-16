@@ -4,24 +4,47 @@ use warnings;
 use Term::ReadLine;
 use Term::ANSIColor;
 
+my $VERSION = 0.3;
+
 #Display warnings
 $SIG{__WARN__} = \&handle_warnings;
 
-my $term = new Term::ReadLine 'IPerl';
+my $term = Term::ReadLine->new('IPerl');
+$term->bind_key(ord "\ci", 'tab-insert');
 
-my $command;
+$term->add_defun('multiline_code', \&multiline_code, ord "\ct");
+
+print "Hello, " . getlogin() . ".\n";
+print "This is IPerl version $VERSION, running Perl $^V .\n";
+print "Press CTRL+T to enter multi-line code, stop with CTRL+D .\n";
+print "Press CTRL+C to exit.\n\n";
 
 do
 {
-    $command = $term->readline(color('blue') . "IPerl" . color('white') . ">" . color('reset') . " ");
-    exit if $command =~ /^exit(\(\))|;$/;
-    my $output = eval($command);
+    $_ = $term->readline(color('blue') . "IPerl" . color('white') . ">" . color('reset') . " ");
+    my $output = eval($_);
     print(color('red') . "ERROR: " . color('reset') .  $@ . "\n") if $@;
     print($output . "\n") if $output;
 }
-while ($command !~ /^exit(\(\))|;$/);
+while ($_ !~ /^exit(\(\))|;$/);
 
 sub handle_warnings
 {
     print color('yellow'). "WARNING: " . color('reset') . $_[0] . "\n" 
+}
+
+sub multiline_code
+{
+    print "\n";
+    my $code;
+    do
+    {
+        $_ = $term->readline("...  ");
+        $code .= $_ if $_;
+    }
+    while ($_);
+    print "\n";
+    my $output = eval($code);
+    print(color('red') . "ERROR: " . color('reset') .  $@ . "\n") if $@;
+    print($output . "\n") if $output;
 }
