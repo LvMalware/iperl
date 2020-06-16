@@ -11,7 +11,6 @@ $SIG{__WARN__} = \&handle_warnings;
 
 my $term = Term::ReadLine->new('IPerl');
 $term->bind_key(ord "\ci", 'tab-insert');
-
 $term->add_defun('multiline_code', \&multiline_code, ord "\ct");
 
 print "Hello, " . getlogin() . ".\n";
@@ -21,12 +20,12 @@ print "Press CTRL+C to exit.\n\n";
 
 do
 {
-    $_ = $term->readline(color('blue') . "IPerl" . color('white') . ">" . color('reset') . " ");
-    my $output = eval($_);
+    $_ = $term->readline(color('blue') . "IPerl" . color('white') . ">" . color('reset') . " ") || '';
+    my $output = eval($_) || " ";
     print(color('red') . "ERROR: " . color('reset') .  $@ . "\n") if $@;
     print($output . "\n") if $output;
 }
-while ($_ !~ /^exit(\(\))|;$/);
+while (1);
 
 sub handle_warnings
 {
@@ -36,7 +35,8 @@ sub handle_warnings
 sub multiline_code
 {
     print "\n";
-    my $code;
+    $term->ornaments(0);
+    my $code = '';
     do
     {
         $_ = $term->readline("...  ");
@@ -47,4 +47,5 @@ sub multiline_code
     my $output = eval($code);
     print(color('red') . "ERROR: " . color('reset') .  $@ . "\n") if $@;
     print($output . "\n") if $output;
+    $term->ornaments(1);
 }
