@@ -1,7 +1,7 @@
 # IPerl
 > Interactive Perl interpreter
 
-This is a simple script that aims to provide an easy and fun way to run a interactive Perl interpreter.
+This is a simple REPL (Read, Execute, Print, Loop) script that aims to provide an easy and fun way to run a interactive Perl interpreter.
 
 
 ## Installation
@@ -29,7 +29,7 @@ IPerl>
 
 - Add sugestions/completions
 - Add syntax highlight
-- Add support to multi-line codes
+- Allow editing multi-line code
 
 ## Meta
 
