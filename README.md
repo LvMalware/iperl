@@ -8,39 +8,26 @@ This is a simple REPL (Read, Execute, Print, Loop) script that aims to provide a
 - Term::ReadLine::Gnu
 > user@pc:~$ cpan Term::ReadLine::Gnu
 
-- Term::ANSIColor
-> user@pc:~$ cpan Term::ANSIColor
-
 ## Installation
 
 OS X & Linux:
 
-```sh
+```
 sudo cp iperl.pl /bin/iperl
 ```
 
 Windows:
 
-```sh
+```
 cp iperl.pl %HOMEPATH%
 ```
 
 ## Usage example
 
-```
-user@pc:~$ iperl
-
-Hello, user.
-This is IPerl version 0.3, running Perl v5.28.1 .
-Press CTRL+T to enter multi-line code, stop with CTRL+D .
-Press CTRL+C to exit.
-
-IPerl> 
-```
+<img src="showcase.gif">
 
 ## TODO list
 
-- Add sugestions/completions
 - Add syntax highlight
 - Allow editing multi-line code
 
