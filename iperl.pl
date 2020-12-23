@@ -18,7 +18,7 @@ my $YELLOW  = "\033[33;1m";
 #Display warnings
 $SIG{__WARN__} = \&handle_warnings;
 #Save history before exiting
-$SIG{INT}      = IGNORE;
+$SIG{INT}      = undef;
 
 $| = 1;
 my $history = "$ENV{HOME}/.iperl_history";
