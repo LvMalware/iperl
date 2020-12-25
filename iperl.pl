@@ -23,7 +23,7 @@ $SIG{INT}      = undef;
 $| = 1;
 my $history = "$ENV{HOME}/.iperl_history";
 my $whoami  = getlogin();
-my $prompt  = "${BLUE}IPerl$OFF";
+my $prompt  = "IPerl";
 
 
 my $term = Term::ReadLine->new('IPerl');
@@ -55,7 +55,7 @@ sub main
 {
     print <<WELCOME;
 Hello, ${GREEN}${whoami}${OFF} !!!
-This is $prompt version $VERSION, running ${BLUE}Perl ${YELLOW}$^V${OFF}.
+This is ${BLUE}$prompt${OFF} version $VERSION, running ${BLUE}Perl ${YELLOW}$^V${OFF}.
 Press ${RED}CTRL+T${OFF} to enter multi-line code, stop with ${RED}CTRL+D${OFF}.
 Type ${RED}exit${OFF} to exit.
 
@@ -111,7 +111,7 @@ sub multiline_code
     my $code = $start ? $start : '';
     do
     {
-        print "${PURPLE}... ${OFF}";
+        print "... ";
         $_ = $term->readline("");
         $code .= $_ if $_;
     }
