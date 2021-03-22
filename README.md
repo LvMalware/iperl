@@ -13,23 +13,34 @@ This is a simple REPL (Read, Execute, Print, Loop) script that aims to provide a
 OS X & Linux:
 
 ```
-sudo cp iperl.pl /bin/iperl
+git clone https://github.com/lvmalware/iperl && \
+cd iperl && \
+sudo ./install.sh
 ```
 
 Windows:
 
-```
-cp iperl.pl %HOMEPATH%
-```
+Not implemented yet
 
 ## Usage example
 
 <img src="showcase.gif">
 
+## Latest updates
+
+- Version 1.1
+- Added an install.sh for easy installation within unix-like systems
+- Moved execution context away from IPerl's code scope to avoid conflicts
+- Added support for custom modules (need to be expanded ...)
+
+
 ## TODO list
 
 - Add syntax highlight
+- Add more custom modules
 - Allow editing multi-line code
+- Improve multi-line code support
+- Add a way for the user to quickly deploy his own modules
 
 ## Meta
 
