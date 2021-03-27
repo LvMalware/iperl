@@ -83,10 +83,7 @@ sub run
             } while ($_);
         }
         #add user-defined function names to the completion list
-        while ($code =~ /sub ([\d\w_]+)/g)
-        {
-            push @{$words}, $1 unless grep(/^$1$/, @{$words});
-        }
+        $self->add_completion(map { $1 } $code =~ /sub ([\d\w_]+)/g);
         #save the history at each command
         $self->{term}->write_history($self->{history});
         #evaluate the user code on a different scope to avoid conflicts with
@@ -96,6 +93,16 @@ sub run
         print $GREEN, $output, $OFF, "\n" if $output;
         print "${RED}ERROR${OFF}: $error\n" if $error;
         print "${YELLOW}WARNING${OFF}: $warning" if $warning;
+    }
+}
+
+sub add_completion
+{
+    my ($self, @words) = @_;
+    my $list = $self->{term_attribs}->{completion_word};
+    for (@words)
+    {
+        push @{$list}, $1 unless grep(/^$1$/, @{$list});
     }
 }
 
