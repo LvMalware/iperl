@@ -20,8 +20,13 @@ sub new
 {
     my ($self, %args) = @_;
     my $path    = $args{path};
-    my $prompt  = $args{"prompt"} || "IPerl";
-    my $history = $args{"history"} || "$ENV{HOME}/.iperl_history";
+    my $prompt  = $args{prompt} || "IPerl";
+    my $history = $args{history} || "$ENV{HOME}/.iperl_history";
+    my $config  = $args{configfile};
+    if ($config)
+    {
+        
+    }
     my $term    = Term::ReadLine->new($prompt);
     my $attr    = $term->Attribs;
     $term->ornaments(0);
@@ -43,7 +48,7 @@ sub new
             wait waitpid lock scalar do require import use ref package
             accept bind connect getpeername getsockname getsockopt listen
             recv send setsockopt shutdown socket socketpair eval
-            searchModule listModules refreshModules
+            searchModule listModules refreshModules loadModule
         )
     ];
     bless {
@@ -63,11 +68,10 @@ sub run
     $INC{IPERL_MODULES} = $self->{path};
     unshift @INC, $self->{path};
     
+    #Give IPerl::CodeExec access to the current running IPerl instance
+    $IPerl::CodeExec::IPERL_INSTANCE = $self;
     #load default modules
-    for (IPerl::CodeExec::searchModule('^Default::.+'))
-    {
-        IPerl::CodeExec::__evaluate("use $_") ;
-    }
+    IPerl::CodeExec::loadModule(IPerl::CodeExec::searchModule('^Default::.+'));
     
     while (1)
     {
@@ -100,9 +104,10 @@ sub add_completion
 {
     my ($self, @words) = @_;
     my $list = $self->{term_attribs}->{completion_word};
-    for (@words)
+    for my $name (@words)
     {
-        push @{$list}, $1 unless grep(/^$1$/, @{$list});
+        my $search = quotemeta($name);
+        push @{$list}, $name unless grep(/^$search$/, @{$list});
     }
 }
 

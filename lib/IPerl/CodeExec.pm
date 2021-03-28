@@ -9,6 +9,8 @@ package IPerl::CodeExec;
 #using searchModule().
 @MODULES_LIST = ();
 
+$IPERL_INSTANCE = undef;
+
 sub __evaluate
 {
     #evaluates the input code, returning the output, errors and warnings
@@ -31,6 +33,21 @@ sub searchModule
     else
     {
         print "[-] No modules where found that match your search pattern\n";
+    }
+}
+
+sub loadModule
+{
+    my (@modules) = @_;
+    for my $module (@modules)
+    {
+        my @export = eval <<USE;
+        require $module;
+        $module->import();
+        \@$module\:\:EXPORT
+USE
+        print "[!] Can't load module $module\n" if $@;
+        $IPERL_INSTANCE->add_completion(@export) if $IPERL_INSTANCE && @export;
     }
 }
 
