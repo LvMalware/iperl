@@ -10,7 +10,8 @@ MAIN_PATH="${EXEC_PATH}/${BASE_NAME}"
 ROOT=$(id `whoami` | cut -d \= -f 2 | cut -d \( -f 1);
 [ ! $ROOT -eq 0 ] && echo "Can't install without ROOT privileges" && exit
 #
-
+echo "Installing CPAN modules..."
+cpan -i JSON Term::ReadLine::Gnu
 echo "Installing modules at $INSTALL_PATH"
 mkdir -p "$INSTALL_PATH"
 echo "Installing executable at $MAIN_PATH"

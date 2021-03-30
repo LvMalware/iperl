@@ -19,5 +19,5 @@ This is ${BLUE}IPerl${OFF} version $VERSION, running ${BLUE}Perl ${YELLOW}$^V${O
 Type ${RED}exit${OFF} to exit.
 INTRO
 
-my $interpreter = IPerl->new(path => "./modules");
+my $interpreter = IPerl->new(path => [ "./modules" ]);
 $interpreter->run(intro => $intro);

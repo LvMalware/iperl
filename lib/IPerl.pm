@@ -1,4 +1,5 @@
 package IPerl;
+use JSON;
 use strict;
 use warnings;
 use lib './';
@@ -22,10 +23,26 @@ sub new
     my $path    = $args{path};
     my $prompt  = $args{prompt} || "IPerl";
     my $history = $args{history} || "$ENV{HOME}/.iperl_history";
-    my $config  = $args{configfile};
-    if ($config)
+    my $config  = $args{configfile} || "$ENV{HOME}/.iperl_config.json";
+    if (-f $config && open(my $file, "<$config"))
     {
-        
+        my $conf = decode_json(join '', <$file>);
+        $history = $conf->{history} if $conf->{history};
+        $prompt  = $conf->{prompt} if $conf->{prompt};
+        push @{$path}, @{$conf->{path}} if $conf->{path};
+    }
+    elsif ($config)
+    {
+        print "${RED}ERROR${OFF}: Can't load config file '$config'\n";
+        if (open(my $file, ">$config"))
+        {
+            print $file encode_json({
+                history => $history,
+                prompt  => $prompt,
+                path    => $path
+            }), "\n";
+            close $file;
+        }
     }
     my $term    = Term::ReadLine->new($prompt);
     my $attr    = $term->Attribs;
@@ -66,7 +83,7 @@ sub run
     my $words = $self->{term_attribs}->{completion_word};
     #support for IPerl modules
     $INC{IPERL_MODULES} = $self->{path};
-    unshift @INC, $self->{path};
+    unshift @INC, @{$self->{path}};
     
     #Give IPerl::CodeExec access to the current running IPerl instance
     $IPerl::CodeExec::IPERL_INSTANCE = $self;

@@ -63,14 +63,16 @@ sub refreshModules
 {
     return unless $INC{IPERL_MODULES};
     @MODULES_LIST = ();
-    my @dir_queue = ($INC{IPERL_MODULES});
-    while (@dir_queue)
+    my @list = @{$INC{IPERL_MODULES}};
+    my $path = shift @list;
+    my @dir_queue = ($path);
+    while (@dir_queue || @list)
     {
-        my $current = shift @dir_queue;
+        my $current = @dir_queue ? (shift @dir_queue) : ($path = shift @list);
         push @dir_queue, glob("$current/*") if -d $current;
         if (-f $current)
         {
-            my $name = substr($current, length($INC{IPERL_MODULES}) + 1);
+            my $name = substr($current, length($path) + 1);
             $name =~ s/\//::/g;
             push @MODULES_LIST, $name =~ s/(\.pm)$//ir;
         }

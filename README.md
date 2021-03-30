@@ -4,7 +4,8 @@
 This is a simple REPL (Read, Execute, Print, Loop) script that aims to provide an easy and fun way to run a interactive Perl interpreter.
 
 ## Dependencies
-
+- JSON
+> user@pc:~$ cpan JSON
 - Term::ReadLine::Gnu
 > user@pc:~$ cpan Term::ReadLine::Gnu
 
