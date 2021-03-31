@@ -4,7 +4,7 @@ use warnings;
 use lib './lib';
 use IPerl;
 
-my $VERSION = "1.1";
+my $VERSION = $IPerl::VERSION;
 # Color sequences
 my $OFF     = "\033[0m";
 my $RED     = "\033[31;1m";
@@ -15,7 +15,7 @@ my $whoami  = getlogin();
 
 my $intro = <<INTRO;
 Hello, ${GREEN}${whoami}${OFF} !!!
-This is ${BLUE}IPerl${OFF} version $VERSION, running ${BLUE}Perl ${YELLOW}$^V${OFF}.
+This is ${BLUE}IPerl${OFF} version ${YELLOW}$VERSION${OFF}, running ${BLUE}Perl ${YELLOW}$^V${OFF}.
 Type ${RED}exit${OFF} to exit.
 INTRO
 

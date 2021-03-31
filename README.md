@@ -23,17 +23,25 @@ Windows:
 
 Not implemented yet
 
-## Usage example
+## Usage
 
 <img src="showcase.gif">
 
+## Some cool modules
+
+## Writting and deploying your modules
+
 ## Latest updates
 
-- Version 1.1
+### Version 1.1.1
+- Added support for config file in JSON format
+- Added a loadModule() function. Modules loaded through loadModule() have their exported names automatically added to the completion list
+- Default modules can be specified through the config file
+
+### Version 1.1
 - Added an install.sh for easy installation within unix-like systems
 - Moved execution context away from IPerl's code scope to avoid conflicts
 - Added support for custom modules (need to be expanded ...)
-
 
 ## TODO list
 
@@ -41,7 +49,6 @@ Not implemented yet
 - Add more custom modules
 - Allow editing multi-line code
 - Improve multi-line code support
-- Add a way for the user to quickly deploy his own modules
 
 ## Meta
 
