@@ -24,10 +24,12 @@ sub new
     my $prompt  = $args{prompt} || "IPerl";
     my $history = $args{history} || "$ENV{HOME}/.iperl_history";
     my $config  = $args{configfile} || "$ENV{HOME}/.iperl_config.json";
+    my $default = $args{default};
     if (-f $config && open(my $file, "<$config"))
     {
         my $conf = decode_json(join '', <$file>);
         $history = $conf->{history} if $conf->{history};
+        $default = $conf->{default} if $conf->{default};
         $prompt  = $conf->{prompt} if $conf->{prompt};
         push @{$path}, @{$conf->{path}} if $conf->{path};
     }
@@ -70,7 +72,8 @@ sub new
     ];
     bless {
         path => $path, prompt => $prompt, history => $history,
-        term => $term, term_attribs => $attr
+        term => $term, term_attribs => $attr, config => $config,
+        default => $default,
     }, $self;
 }
 
@@ -88,7 +91,7 @@ sub run
     #Give IPerl::CodeExec access to the current running IPerl instance
     $IPerl::CodeExec::IPERL_INSTANCE = $self;
     #load default modules
-    IPerl::CodeExec::loadModule(IPerl::CodeExec::searchModule('^Default::.+'));
+    IPerl::CodeExec::loadModule(@{$self->{default}}) if $self->{default};
     
     while (1)
     {

@@ -1,4 +1,5 @@
 {
+    "default" : ["MIME::Base64", "Math::BigInt"],
     "history" : "/home/lva/.iperl_history",
     "prompt"  : "IPerl",
     "path"    : ["/usr/share/iperl/modules"]
