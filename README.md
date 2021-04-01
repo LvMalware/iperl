@@ -13,7 +13,7 @@ This is a simple REPL (Read, Execute, Print, Loop) script that aims to provide a
 
 OS X & Linux:
 
-```
+```bash
 git clone https://github.com/lvmalware/iperl && \
 cd iperl && \
 sudo ./install.sh
@@ -29,7 +29,58 @@ Not implemented yet
 
 ## Some cool modules
 
+Modules can be found [here](https://github.com/LvMalware/iperl_modules)
+
+To install them:
+
+1. clone the repository
+
+```bash
+git clone https://github.com/LvMalware/iperl_modules
+```
+
+2. add their path to the config file
+
+Assuming you have a configuration file your $HOME directory, modify the value of 'path':
+
+```JSON
+{
+    "history" : "/home/lva/.iperl_history",
+    "prompt"  : "IPerl",
+    "path"    : ["/usr/share/iperl/modules", "add_your_path_here"]
+}
+
+```
+
 ## Writting and deploying your modules
+
+Write a standart Perl module, like the following Example.pm:
+
+```perl
+package Example;
+use base 'Exporter';
+our @EXPORT = qw(test_func1 test_func2);
+
+sub test_func1
+{
+    ...
+}
+
+sub test_func2
+{
+    ...
+}
+```
+
+Copy your module to any location already on the path (configured on your config file) or add its location to the path as shown above.
+
+## use vs. loadModule
+
+The release 1.1.1 introduces the loadModule() function that can be used (as the name sugests) to load the contents of a module into the current running instance of IPerl.
+
+loadModule() can be used only inside the interactive interpreter and does basically the same as 'use', but with the difference that it will automatically add all the exported names from the loaded module to the completion list, allowing these names to be sugested and completed by typing their first letters and pressing tab.
+
+Besides that, there is no advantage in using loadModule() instead of 'use' to load modules.
 
 ## Latest updates
 
