@@ -11,7 +11,8 @@ ROOT=$(id `whoami` | cut -d \= -f 2 | cut -d \( -f 1);
 [ ! $ROOT -eq 0 ] && echo "Can't install without ROOT privileges" && exit
 #
 echo "Installing CPAN modules..."
-cpan -i JSON Term::ReadLine::Gnu
+#cpan -i JSON Term::ReadLine::Gnu
+apt install libjson-perl libterm-readline-gnu-perl
 echo "Installing modules at $INSTALL_PATH"
 mkdir -p "$INSTALL_PATH"
 echo "Installing executable at $MAIN_PATH"
