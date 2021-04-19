@@ -70,7 +70,7 @@ sub refreshModules
     {
         my $current = @dir_queue ? (shift @dir_queue) : ($path = shift @list);
         push @dir_queue, glob("$current/*") if -d $current;
-        if (-f $current)
+        if (-f $current && $current =~ /\.pm$/i)
         {
             my $name = substr($current, length($path) + 1);
             $name =~ s/\//::/g;
