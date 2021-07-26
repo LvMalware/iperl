@@ -301,7 +301,7 @@ package IPerl::Term {
         
         ReadMode 5;
         
-        print "\x1b[0;1m$prompt" if $prompt;
+        print $prompt if $prompt;
 
         while (1) {
   

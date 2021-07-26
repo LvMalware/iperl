@@ -6,10 +6,10 @@ use lib './';
 use IPerl::Term;
 use IPerl::CodeExec;
 
-our $VERSION = "1.1.1";
+our $VERSION = "1.2";
 
 # Color sequences
-my $OFF     = "\033[0m";
+my $OFF     = "\033[0m;1";
 my $RED     = "\033[31;1m";
 my $BLUE    = "\033[34;1m";
 my $GREEN   = "\033[32;1m";
@@ -25,6 +25,7 @@ sub new
     my $history = $args{history} || "$ENV{HOME}/.iperl_history";
     my $config  = $args{configfile} || "$ENV{HOME}/.iperl_config.json";
     my $default = $args{default};
+    
     if (-f $config && open(my $file, "<$config"))
     {
         my $conf = decode_json(join '', <$file>);
@@ -55,8 +56,12 @@ sub new
     }, $self;
 }
 
-sub run
-{
+sub bind_keys {
+    my ($self, %bindings) = @_;
+    $self->{term}->bind_keys(%bindings);
+}
+
+sub run {
     my ($self, %args) = @_;
     #print the intro
     print $args{intro}, "\n" if $args{intro};
