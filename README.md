@@ -23,7 +23,9 @@ Not implemented yet
 
 ## Usage
 
-<img src="showcase.gif">
+<video width="814" height="540" autoplay="1" loop="1">
+  <source src="showcase.mp4" type="video/mp4">
+</video>
 
 ## Some cool modules
 
