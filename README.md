@@ -23,7 +23,8 @@ Not implemented yet
 
 ## Usage
 
-![](showcase.gif)
+![showcase](https://user-images.githubusercontent.com/37661824/127003333-e0479afc-92b7-4b51-a8d0-1f3c1133f0b9.gif)
+
 
 ## Some cool modules
 
