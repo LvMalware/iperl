@@ -9,7 +9,7 @@ use IPerl::CodeExec;
 our $VERSION = "1.2";
 
 # Color sequences
-my $OFF     = "\033[0m;1";
+my $OFF     = "\033[0;1m";
 my $RED     = "\033[31;1m";
 my $BLUE    = "\033[34;1m";
 my $GREEN   = "\033[32;1m";

@@ -74,7 +74,7 @@ Copy your module to any location already on the path (configured on your config 
 
 ## use vs. loadModule
 
-The release 1.1.1 introduces the loadModule() function that can be used (as the name sugests) to load the contents of a module into the current running instance of IPerl.
+The release 1.1.1 introduced the loadModule() function that can be used (as the name sugests) to load the contents of a module into the current running instance of IPerl.
 
 loadModule() can be used only inside the interactive interpreter and does basically the same as 'use', but with the difference that it will automatically add all the exported names from the loaded module to the completion list, allowing these names to be sugested and completed by typing their first letters and pressing tab.
 
