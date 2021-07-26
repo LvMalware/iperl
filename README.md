@@ -23,7 +23,7 @@ Not implemented yet
 
 ## Usage
 
-![](showcase.mp4)
+![](showcase.gif)
 
 ## Some cool modules
 
