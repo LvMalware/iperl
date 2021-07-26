@@ -6,8 +6,6 @@ This is a simple REPL (Read, Execute, Print, Loop) script that aims to provide a
 ## Dependencies
 - JSON
 > user@pc:~$ cpan JSON
-- Term::ReadLine::Gnu
-> user@pc:~$ cpan Term::ReadLine::Gnu
 
 ## Installation
 
@@ -84,6 +82,11 @@ Besides that, there is no advantage in using loadModule() instead of 'use' to lo
 
 ## Latest updates
 
+### Version 1.2
+- Added syntax highlight
+- Removed dependence on Term::ReadLine::Gnu (replaced by IPerl::Term)
+- Added key-binding capabilities
+
 ### Version 1.1.1
 - Added support for config file in JSON format
 - Added a loadModule() function. Modules loaded through loadModule() have their exported names automatically added to the completion list
@@ -96,10 +99,10 @@ Besides that, there is no advantage in using loadModule() instead of 'use' to lo
 
 ## TODO list
 
-- Add syntax highlight
 - Add more custom modules
 - Allow editing multi-line code
 - Improve multi-line code support
+- Fix any bugs that may appear within IPerl::Term
 
 ## Meta
 
