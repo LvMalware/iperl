@@ -23,7 +23,8 @@ Not implemented yet
 
 ## Usage
 
-![](showcase.mp4)
+https://user-images.githubusercontent.com/37661824/127000752-1580c02d-b258-47f7-8690-fb58b0af0e8e.mp4
+
 
 ## Some cool modules
 
