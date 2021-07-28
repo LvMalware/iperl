@@ -286,10 +286,19 @@ package IPerl::Term {
         close($o);
     }
 
+    sub cursor_position {
+        my ($self) = @_;
+        my $answer = "";
+        print "\x1b[6n";
+        $answer .= getc(STDIN) until $answer =~ /(\d+);(\d+)R$/;
+        return ($1, $2);
+    }
+
     sub readline {
         my ($self, $prompt) = @_;
         my $plen   = length($prompt || '');
         my $width  = $self->width();
+        my $height = $self->height();
         my $buffer = "";
         my $plines = 1;
         my $cindex = 0;
@@ -306,7 +315,8 @@ package IPerl::Term {
         while (1) {
   
             $width = $self->width();
-  
+            $height = $self->height();
+            
             my $c = $self->readkey();
             
             if ($c == 10 || $c == 13) {
@@ -343,9 +353,11 @@ package IPerl::Term {
             } elsif ($c == ARROW_UP) {
                 $buffer = $self->history_previous() || next;
                 $cindex = length($buffer);
+                $c_y = int(($plen + length($buffer) + $width - 1) / $width);
             } elsif ($c == ARROW_DOWN) {
                 $buffer = $self->history_next() || next;
                 $cindex = length($buffer);
+                $c_y = int(($plen + length($buffer) + $width - 1) / $width);
             } elsif ($c == ARROW_LEFT) {
                 #move cursor to the left
                 $c_y -- if $c_x == 1;
@@ -373,7 +385,11 @@ package IPerl::Term {
             my ($nlines, $render) = $self->update_syntax($plen, $buffer);
             #add 1 to down_y if we have an extra line for completion
             $down_y += $sugest;
-            #go to the last row used
+            #get the cursor position on the screen
+            my ($row, $col) = $self->cursor_position();
+            #if we are at the very end of the screen, print a newline
+            print "\r\n" if $row >= $height;
+            #go to the last row used before
             my $printable = "\x1b[${down_y}B" if $down_y;
             #clear every row, going up
             $printable .= "\x1b[0G\x1b[0K\x1b[1A" x ($plines + $sugest);
@@ -384,7 +400,7 @@ package IPerl::Term {
             #add the rendered buffer
             $printable .= $render;
             #add the suggestions line if completing
-            $printable .= "\r\n$extra" if $extra;
+            $printable .= "\r\n$extra" if length($extra) > 0;
             #position the cursor on the x axis
             $printable .= "\x1b[${c_x}G";
             #position the cursor on the y axis
