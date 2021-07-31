@@ -158,7 +158,7 @@ package IPerl::Term {
 
     sub readkey {
         my ($self) = @_;
-
+        READ_KEYS:
         my $key = ord(ReadKey(0));
         if ($key == 0x1b) #Escape sequence
         {
@@ -174,6 +174,17 @@ package IPerl::Term {
                         return DEL_KEY   if $s1 == 0x33;
                         return PAGE_UP   if $s1 == 0x35;
                         return PAGE_DOWN if $s1 == 0x36;
+                    }
+                    elsif (($s2 >= 0x30 && $s2 <= 0x39) || $s2 == 0x3b)
+                    {
+                        my $ans = chr($s1) . chr($s2);
+                        $ans .= ReadKey(0) until $ans =~ /(\d+);(\d+)R$/;
+                        if ($self)
+                        {
+                            $self->{pos_y} = $1;
+                            $self->{pos_x} = $2;
+                        }
+                        goto READ_KEYS
                     }
                 }
                 else
@@ -288,10 +299,7 @@ package IPerl::Term {
 
     sub cursor_position {
         my ($self) = @_;
-        my $answer = "";
-        print "\x1b[6n";
-        $answer .= getc(STDIN) until $answer =~ /(\d+);(\d+)R$/;
-        return ($1, $2);
+        return ($self->{pos_y}, $self->{pos_x});
     }
 
     sub readline {
@@ -307,10 +315,10 @@ package IPerl::Term {
         my $extra  = "";
         my $c_y    = 1;
         my $c_x    = $plen;
-        
+
         ReadMode 5;
         
-        print "\x1b[0;1m$prompt" if $prompt;
+        print "\x1b[0;1m$prompt\x1b[6n" if $prompt;
 
         while (1) {
   
@@ -318,7 +326,7 @@ package IPerl::Term {
             $height = $self->height();
             
             my $c = $self->readkey();
-            
+
             if ($c == 10 || $c == 13) {
                 print "\r\n";
                 last;
@@ -385,7 +393,7 @@ package IPerl::Term {
             my ($nlines, $render) = $self->update_syntax($plen, $buffer);
             #add 1 to down_y if we have an extra line for completion
             $down_y += $sugest;
-            #get the cursor position on the screen
+            #get the cursor position
             my ($row, $col) = $self->cursor_position();
             #if we are at the very end of the screen, print a newline
             print "\r\n" if $row >= $height;
@@ -408,6 +416,8 @@ package IPerl::Term {
             $printable .= "\x1b[${up}A" if $up > 0;
             #reset colors
             $printable .= "\x1b[0;1m";
+            #request cursor position
+            $printable .= "\x1b[6n";
             #update the number of lines under the cursor
             $down_y = ($nlines - $c_y) + 1;
             #update the number of lines previously used

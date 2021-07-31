@@ -22,8 +22,8 @@ PKG="$(which apt)" && INSTALL="$PKG install -y"
 [ -z "$PKG" ] && PKG="$(which xbps-install)" && INSTALL="$PKG -y"
 #
 echo "Installing dependences..."
-#cpan -i JSON #(not need to Term::ReadLine::Gnu)
-$INSTALL libjson-perl #libterm-readline-gnu-perl
+#cpan -i JSON Term::ReadKey
+$INSTALL libjson-perl libterm-readkey-perl
 echo "Installing modules at $INSTALL_PATH"
 mkdir -p "$INSTALL_PATH"
 echo "Installing executable at $MAIN_PATH"

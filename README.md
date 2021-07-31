@@ -6,7 +6,8 @@ This is a simple REPL (Read, Execute, Print, Loop) script that aims to provide a
 ## Dependencies
 - JSON
 > user@pc:~$ cpan JSON
-
+- Term::ReadKey
+> user@pc:~$ cpan Term::ReadKey
 ## Installation
 
 OS X & Linux:
