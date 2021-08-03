@@ -249,8 +249,11 @@ package IPerl::Term {
                 }
             } elsif ($in_com) {
                 $ncolor = 30;
-            } elsif ($word =~ /^\d+\.?\d*$/) {
+            } elsif ($word =~ /^\d+\.?\d*$/ || $word =~ /^0x[\da-f]+$/i) {
                 $ncolor = 31;
+            } elsif ($is_var) {
+                $is_var = 0;
+                $ncolor = 35;
             } elsif (grep(/^$w$/, @reserved_words)) {
                 $ncolor = 34;
             } elsif ($word eq "'" or $word eq '"') {
@@ -261,9 +264,6 @@ package IPerl::Term {
                 $in_com = 1;
             } elsif ($word eq '$' or $word eq '@' or $word eq '%') {
                 $is_var = 1;
-                $ncolor = 35;
-            } elsif ($is_var) {
-                $is_var = 0;
                 $ncolor = 35;
             }
 
