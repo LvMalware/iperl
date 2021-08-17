@@ -102,6 +102,7 @@ sub run {
         #identifiers of the IPerl internal code
         my ($output, $error, $warning) = IPerl::CodeExec::__evaluate($code);
         #
+        print "\n";
         print $GREEN, $output, $OFF, "\n" if $output;
         print "${RED}ERROR${OFF}: $error\n" if $error;
         print "${YELLOW}WARNING${OFF}: $warning" if $warning;

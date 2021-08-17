@@ -224,7 +224,7 @@ package IPerl::Term {
         
         while ($i <= $len + length($code))
         {
-            substr($code, $i - $len, 0) = "\n";
+            substr($code, $i - $len, 0) = "\r\n";
             $i += $width + 1;
             $nlines ++;
         }
@@ -274,7 +274,6 @@ package IPerl::Term {
 
             $render .= $word;
         }
-        
         ($nlines, $render)
     }
 
