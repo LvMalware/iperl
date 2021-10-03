@@ -225,7 +225,7 @@ package IPerl::Term {
         while ($i <= $len + length($code))
         {
             substr($code, $i - $len, 0) = "\r\n";
-            $i += $width + 1;
+            $i += $width + 2;
             $nlines ++;
         }
 
@@ -383,7 +383,7 @@ package IPerl::Term {
                 substr($buffer, -- $cindex, 1) = "" if $cindex > 0;
             } else {
                 substr($buffer, $cindex ++, 0) = chr($c);
-                $c_y ++ if $c_x == $width;
+                $c_y ++ if $c_x >= $width;
             }
             
             #get the position of the cursor on the x axis

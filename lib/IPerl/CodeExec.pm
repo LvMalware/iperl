@@ -7,6 +7,7 @@ package IPerl::CodeExec;
 #this variable holds a list of all the IPerl modules that are avaiable. These
 #can be updated using refreshModules(), listed using listModules() and searched
 #using searchModule().
+
 @MODULES_LIST = ();
 
 $IPERL_INSTANCE = undef;
@@ -15,7 +16,12 @@ sub __evaluate
 {
     #evaluates the input code, returning the output, errors and warnings
     #NOTE: no variables are declared here to avoid conflicts with user code
-    (eval($_[0]) || "", $@, $^W)
+ 
+    eval {
+        #set a local sigtrap to handle SIGINT when the user press CTRL+C
+        local $SIG{INT} = sub { die "Execution interrupted by a SIGINT" };
+        return (eval($_[0]) || "", $@, $^W);
+    };
 }
 
 #Some functions to deal with IPerl modules
