@@ -31,10 +31,10 @@ package IPerl::Term {
         exec exists exit exp fc fileno flock for fork format getc getpeername
         getsockname getsockopt grep hex if import index int join keys kill last
         lc lcfirst length listen listModules loadModule lock long map my next
-        oct or ord pack package pipe pop pos print printf push quotemeta rand
-        read readdir readline recv ref refreshModules require return reverse
-        rewinddir rindex say scalar searchModule seek seekdir select send
-        setsockopt shift shutdown sin socket socketpair sort splice split
+        oct open or ord pack package pipe pop pos print printf push quotemeta
+        rand read readdir readline recv ref refreshModules require return
+        reverse rewinddir rindex say scalar searchModule seek seekdir select
+        send setsockopt shift shutdown sin socket socketpair sort splice split
         sprintf sqrt srand study sub substr syscall sysread sysseek system
         syswrite tell telldir truncate uc ucfirst unpack unshift use values
         wait waitpid warn while write
