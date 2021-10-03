@@ -61,6 +61,55 @@ sub bind_keys {
     $self->{term}->bind_keys(%bindings);
 }
 
+sub read_code {
+    my ($self) = @_;
+    my $term = $self->{term};
+    my $prompt = $self->{prompt} . "> ";
+    my $block = "";
+    my @stack = ();
+    my %terminators = (
+        '}' => '{',
+        ']' => '[',
+        ')' => '(',
+    );
+
+    my $syntax_wrong = 0;
+    my $in_str = "";
+    
+    my $prompt2 = "..." . " " x (length($prompt) - 3);
+
+    while (1) {
+        my $code = $term->readline($prompt);
+        next unless $code;
+        for (my $i = 0; $i < length($code); $i ++) {
+            my $sym = substr($code, $i, 1);
+            if ($sym eq '\\') {
+                $i ++;
+                next
+            }
+            my $esc = quotemeta($sym);
+            if (grep(/$esc/, values %terminators)) {
+                push @stack, $sym;
+                $prompt = $prompt2;
+            } elsif (grep(/$esc/, keys %terminators)) {
+                if (@stack == 0 || $terminators{$sym} ne $stack[-1])
+                {
+                    $syntax_wrong = 1;
+                    last;
+                }
+                pop @stack;
+            }
+        }
+        $block .= $code;
+        last if $syntax_wrong || @stack == 0;
+
+    }
+
+    $syntax_wrong = $syntax_wrong || @stack > 0;
+
+    ($block, $syntax_wrong);
+}
+
 sub run {
     my ($self, %args) = @_;
     #print the intro
@@ -69,8 +118,6 @@ sub run {
     my $term = $self->{term};
     #get a reference to a completion array
     $self->{custom_completion} = $term->completion_array([]);
-    #get the prompt
-    my $prompt = $self->{prompt};
     #support for IPerl modules
     $INC{IPERL_MODULES} = $self->{path};
     #add the modules to the path
@@ -81,26 +128,21 @@ sub run {
     #load default modules
     IPerl::CodeExec::loadModule(@{$self->{default}}) if $self->{default};
     
+
     while (1)
     {
-        my $code = $term->readline("$prompt> ");
-        next unless $code;
-        #check if the input is a multi-line code (I'll need to refact this later)
-        if ($code =~ /(\{|\(|\[)$/)
-        {
-            do
-            {
-                $_ = $term->readline("... ");
-                $code .= $_ if $_
-            } while ($_);
+        my ($block, $wrong) = $self->read_code();
+        if ($wrong) {
+            print "${RED}Syntax error${OFF}\n";
+            next;
         }
         #add user-defined function names to the completion list
-        $self->add_completion(map { $1 } $code =~ /sub ([\d\w_]+)/g);
+        $self->add_completion(map { $1 } $block =~ /sub ([\d\w_]+)/g);
         #save the history at each command
         $term->history_save();
         #evaluate the user code on a different scope to avoid conflicts with
         #identifiers of the IPerl internal code
-        my ($output, $error, $warning) = IPerl::CodeExec::__evaluate($code);
+        my ($output, $error, $warning) = IPerl::CodeExec::__evaluate($block);
         #
         print "\n";
         print $GREEN, $output, $OFF, "\n" if $output;

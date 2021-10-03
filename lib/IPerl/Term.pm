@@ -219,7 +219,7 @@ package IPerl::Term {
         my $is_esc = 0;
         my $nlines = 1;
         my $width  = $self->width();
-        
+
         my $i = $width;
         
         while ($i <= $len + length($code))
@@ -274,6 +274,7 @@ package IPerl::Term {
 
             $render .= $word;
         }
+
         ($nlines, $render)
     }
 
