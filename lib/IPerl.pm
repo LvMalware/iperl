@@ -78,6 +78,8 @@ sub read_code {
     
     my $prompt2 = "..." . " " x (length($prompt) - 3);
 
+    my $instr = undef;
+
     while (1) {
         my $code = $term->readline($prompt);
         next unless $code;
@@ -87,8 +89,17 @@ sub read_code {
                 $i ++;
                 next
             }
+            
+            if (defined($instr)) {
+                $instr = undef if $instr eq $sym;
+                next;
+            }
+
             my $esc = quotemeta($sym);
-            if (grep(/$esc/, values %terminators)) {
+
+            if (grep(/$esc/, qw(' "))) {
+                $instr = $sym;
+            } elsif (grep(/$esc/, values %terminators)) {
                 push @stack, $sym;
                 $prompt = $prompt2;
             } elsif (grep(/$esc/, keys %terminators)) {
@@ -101,8 +112,8 @@ sub read_code {
             }
         }
         $block .= $code;
+        next if $instr && !$syntax_wrong;
         last if $syntax_wrong || @stack == 0;
-
     }
 
     $syntax_wrong = $syntax_wrong || @stack > 0;
