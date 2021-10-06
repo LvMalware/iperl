@@ -320,7 +320,9 @@ package IPerl::Term {
         
         print "\x1b[0;1m$prompt\x1b[6n" if $prompt;
 
-        while (1) {
+        my $reading = 1;
+
+        while ($reading) {
   
             $width = $self->width();
             $height = $self->height();
@@ -328,8 +330,8 @@ package IPerl::Term {
             my $c = $self->readkey();
 
             if ($c == 10 || $c == 13) {
-                print "\r\n";
-                last;
+                $reading = 0;
+                goto TO_END
             } elsif ($c == TAB_KEY) {
                 my $base = (split(/\b{wb}/, substr($buffer, 0, $cindex)))[-1];
                 next unless $base;
@@ -355,6 +357,7 @@ package IPerl::Term {
                 $c_y = 1;
             } elsif ($c == END_KEY) {
                 #go to end of line
+                TO_END:
                 $cindex = length($buffer);
                 $c_y = int(($plen + length($buffer) + $width - 1) / $width);
                 $c_y ++ if ($plen + $cindex) % $width == 0;

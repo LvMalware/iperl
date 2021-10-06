@@ -138,7 +138,6 @@ sub run {
     $IPerl::CodeExec::IPERL_INSTANCE = $self;
     #load default modules
     IPerl::CodeExec::loadModule(@{$self->{default}}) if $self->{default};
-    
 
     while (1)
     {
