@@ -421,6 +421,8 @@ package IPerl::Term {
             $printable .= "\x1b[0;1m";
             #request cursor position
             $printable .= "\x1b[6n";
+            #
+            $printable .= "\r\n" unless $reading;
             #update the number of lines under the cursor
             $down_y = ($nlines - $c_y) + 1;
             #update the number of lines previously used
