@@ -3,6 +3,7 @@ package IPerl::Term {
     use strict;
     use warnings;
     use IO::Handle;
+    use Term::Size;
     use Term::ReadKey;
     use parent 'Exporter';
 
@@ -175,17 +176,6 @@ package IPerl::Term {
                         return PAGE_UP   if $s1 == 0x35;
                         return PAGE_DOWN if $s1 == 0x36;
                     }
-                    elsif (($s2 >= 0x30 && $s2 <= 0x39) || $s2 == 0x3b)
-                    {
-                        my $ans = chr($s1) . chr($s2);
-                        $ans .= ReadKey(0) until $ans =~ /(\d+);(\d+)R$/;
-                        if ($self)
-                        {
-                            $self->{pos_y} = $1;
-                            $self->{pos_x} = $2;
-                        }
-                        goto READ_KEYS
-                    }
                 }
                 else
                 {
@@ -280,14 +270,12 @@ package IPerl::Term {
 
     sub width {
         my ($self) = @_;
-        my ($w, $h) = GetTerminalSize();
-        $w
+        $self->{width};
     }
 
     sub height {
         my ($self) = @_;
-        my ($w, $h) = GetTerminalSize();
-        $h
+        $self->{height};
     }
 
     sub add_log {
@@ -297,16 +285,9 @@ package IPerl::Term {
         close($o);
     }
 
-    sub cursor_position {
-        my ($self) = @_;
-        return ($self->{pos_y}, $self->{pos_x});
-    }
-
     sub readline {
         my ($self, $prompt) = @_;
         my $plen   = length($prompt || '');
-        my $width  = $self->width();
-        my $height = $self->height();
         my $buffer = "";
         my $plines = 1;
         my $cindex = 0;
@@ -316,17 +297,14 @@ package IPerl::Term {
         my $c_y    = 1;
         my $c_x    = $plen;
 
-        ReadMode 5;
+        $self->enable_raw_mode();
         
-        print "\x1b[0;1m$prompt\x1b[6n" if $prompt;
+        print "\x1b[0;1m$prompt" if $prompt;
 
         my $reading = 1;
 
         while ($reading) {
   
-            $width = $self->width();
-            $height = $self->height();
-            
             my $c = $self->readkey();
 
             if ($c == 10 || $c == 13) {
@@ -344,7 +322,7 @@ package IPerl::Term {
                 elsif (@possible > 1)
                 {
                     $sugest = 1;
-                    $extra = substr("@possible", 0, $width);
+                    $extra = substr("@possible", 0, $self->{width});
                 }
             } elsif ($c > 0 && $c < 27) {
                 #CTRL_{KEY}
@@ -359,16 +337,16 @@ package IPerl::Term {
                 #go to end of line
                 TO_END:
                 $cindex = length($buffer);
-                $c_y = int(($plen + length($buffer) + $width - 1) / $width);
-                $c_y ++ if ($plen + $cindex) % $width == 0;
+                $c_y = int(($plen + length($buffer) + $self->{width} - 1) / $self->{width});
+                $c_y ++ if ($plen + $cindex) % $self->{width} == 0;
             } elsif ($c == ARROW_UP) {
                 $buffer = $self->history_previous() || next;
                 $cindex = length($buffer);
-                $c_y = int(($plen + length($buffer) + $width - 1) / $width);
+                $c_y = int(($plen + length($buffer) + $self->{width} - 1) / $self->{width});
             } elsif ($c == ARROW_DOWN) {
                 $buffer = $self->history_next() || next;
                 $cindex = length($buffer);
-                $c_y = int(($plen + length($buffer) + $width - 1) / $width);
+                $c_y = int(($plen + length($buffer) + $self->{width} - 1) / $self->{width});
             } elsif ($c == ARROW_LEFT) {
                 #move cursor to the left
                 $c_y -- if $c_x == 1;
@@ -376,7 +354,7 @@ package IPerl::Term {
             } elsif ($c == ARROW_RIGHT) {
                 #move cursor to the right
                 $cindex ++ if $cindex < length($buffer);
-                $c_y ++ if $c_x == $width;
+                $c_y ++ if $c_x == $self->{width};
             } elsif ($c == BACKSPACE) {
                 #erase previous char
                 substr($buffer, -- $cindex, 1) = "" if $cindex > 0;
@@ -387,19 +365,19 @@ package IPerl::Term {
                 substr($buffer, -- $cindex, 1) = "" if $cindex > 0;
             } else {
                 substr($buffer, $cindex ++, 0) = chr($c);
-                $c_y ++ if $c_x >= $width;
+                $c_y ++ if $c_x >= $self->{width};
             }
             
             #get the position of the cursor on the x axis
-            $c_x = ($plen + $cindex) % $width + 1;
+            $c_x = ($plen + $cindex) % $self->{width} + 1;
             #highlight the syntax and get the number of lines
             my ($nlines, $render) = $self->update_syntax($plen, $buffer);
             #add 1 to down_y if we have an extra line for completion
             $down_y += $sugest;
             #get the cursor position
-            my ($row, $col) = $self->cursor_position();
+            my ($row, $col) = Term::Size::pixels;
             #if we are at the very end of the screen, print a newline
-            print "\r\n" if $row >= $height;
+            print "\r\n" if $row >= $self->{height};
             #go to the last row used before
             my $printable = "\x1b[${down_y}B" if $down_y;
             #clear every row, going up
@@ -420,7 +398,7 @@ package IPerl::Term {
             #reset colors
             $printable .= "\x1b[0;1m";
             #request cursor position
-            $printable .= "\x1b[6n";
+            #$printable .= "\x1b[6n";
             #
             $printable .= "\r\n" unless $reading;
             #update the number of lines under the cursor
@@ -434,16 +412,25 @@ package IPerl::Term {
             #print everything at once to avoid glitches
             print $printable;
         }
-        
-        ReadMode 0;
+       
+        disable_raw_mode();
         
         $self->history_add($buffer);
 
         return $buffer;
     }
 
+    sub update_term {
+        my ($self) = @_;
+        ($self->{width}, $self->{height}) = Term::Size::chars *STDOUT{IO};
+    }
+
     sub enable_raw_mode {
         my ($self) = @_;
+        $self->update_term();
+        $SIG{WINCH} = sub {
+            $self->update_term();
+        };
         ReadMode 5;
     }
     
@@ -451,5 +438,6 @@ package IPerl::Term {
         print "\r\n";
         disable_raw_mode();
     }
+
 }
 1;

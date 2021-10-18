@@ -154,8 +154,8 @@ sub run {
         #identifiers of the IPerl internal code
         my ($output, $error, $warning) = IPerl::CodeExec::__evaluate($block);
         #
-        print "\n";
-        print $GREEN, $output, $OFF, "\n" if $output;
+        #print "\n";
+        print $GREEN, $output, $OFF, "\n" if length($output);
         print "${RED}ERROR${OFF}: $error\n" if $error;
         print "${YELLOW}WARNING${OFF}: $warning" if $warning;
     }

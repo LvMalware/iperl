@@ -23,7 +23,7 @@ PKG="$(which apt)" && INSTALL="$PKG install -y"
 #
 echo "Installing dependences..."
 #cpan -i JSON Term::ReadKey
-$INSTALL libjson-perl libterm-readkey-perl
+$INSTALL libjson-perl libterm-readkey-perl libterm-size-perl
 echo "Installing modules at $INSTALL_PATH"
 mkdir -p "$INSTALL_PATH"
 echo "Installing executable at $MAIN_PATH"
