@@ -176,6 +176,17 @@ package IPerl::Term {
                         return PAGE_UP   if $s1 == 0x35;
                         return PAGE_DOWN if $s1 == 0x36;
                     }
+                    elsif (($s2 >= 0x30 && $s2 <= 0x39) || $s2 == 0x3b)
+                    {
+                        my $ans = chr($s1) . chr($s2);
+                        $ans .= ReadKey(0) until $ans =~ /(\d+);(\d+)R$/;
+                        if ($self)
+                        {
+                            $self->{pos_y} = $1;
+                            $self->{pos_x} = $2;
+                        }
+                        goto READ_KEYS
+                    }
                 }
                 else
                 {
@@ -298,7 +309,7 @@ package IPerl::Term {
         my $c_x    = $plen;
 
         $self->enable_raw_mode();
-        
+        print "\x1b[6n";
         print "\x1b[0;1m$prompt" if $prompt;
 
         my $reading = 1;
@@ -375,7 +386,7 @@ package IPerl::Term {
             #add 1 to down_y if we have an extra line for completion
             $down_y += $sugest;
             #get the cursor position
-            my ($row, $col) = Term::Size::pixels;
+            my ($row, $col) = ($self->{pos_y} + $c_y, $self->{pos_x} + $c_x);
             #if we are at the very end of the screen, print a newline
             print "\r\n" if $row >= $self->{height};
             #go to the last row used before
