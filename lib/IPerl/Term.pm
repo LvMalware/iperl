@@ -220,26 +220,15 @@ package IPerl::Term {
         my $is_esc = 0;
         my $nlines = 1;
         my $width  = $self->width();
-
-        my $i = $width;
         
-        while ($i <= $len + length($code))
-        {
-            substr($code, $i - $len, 0) = "\r\n";
-            $i += $width + 2;
-            $nlines ++;
-        }
+        $nlines = int(($len + length($code) + $width - 1) / $width);
 
         for my $word (split /\b{wb}/, $code)
         {
             my $ncolor = 0;
             my $w = quotemeta($word);
 
-            if ($word eq "\n")
-            {
-                $render .= "\r\n\x1b[$lcolor;1m";
-                next;
-            } elsif ($in_str) {
+            if ($in_str) {
                 $ncolor = 32;
                 if ($word eq '\\') {
                     $is_esc = 1
@@ -305,6 +294,7 @@ package IPerl::Term {
         my $sugest = 0;
         my $down_y = 1;
         my $extra  = "";
+        my $prevs  = 0;
         my $c_y    = 1;
         my $c_x    = $plen;
 
@@ -315,13 +305,31 @@ package IPerl::Term {
         my $reading = 1;
 
         while ($reading) {
-  
-            my $c = $self->readkey();
-
-            if ($c == 10 || $c == 13) {
+            my $key = $self->readkey();
+            if ($key == 0xa || $key == 0xd) {
                 $reading = 0;
-                goto TO_END
-            } elsif ($c == TAB_KEY) {
+            } elsif ($key == END_KEY) {
+                $cindex = length($buffer);
+                $c_y = int(($plen + $cindex + $self->width() - 1) / $self->width());
+                $c_y ++ unless ($plen + $cindex) % $self->width();
+            } elsif ($key == HOME_KEY) {
+                $cindex = 0;
+                $c_y = 1;
+            } elsif ($key == ARROW_UP) {
+                $buffer = $self->history_previous() || next;
+                $cindex = length($buffer);
+                $c_y = int(($plen + length($buffer) + $self->width() - 1) / $self->width());
+            } elsif ($key == ARROW_DOWN) {
+                $buffer = $self->history_next() || next;
+                $cindex = length($buffer);
+                $c_y = int(($plen + length($buffer) + $self->width() - 1) / $self->width());
+            } elsif ($key == ARROW_LEFT) {
+                $c_y -- if $c_x == 1;
+                $cindex -- if $cindex;
+            } elsif ($key == ARROW_RIGHT) {
+                $cindex ++ if $cindex < length($buffer);
+                $c_y ++ if $c_x == $self->width();
+            } elsif ($key == TAB_KEY) {
                 my $base = (split(/\b{wb}/, substr($buffer, 0, $cindex)))[-1];
                 next unless $base;
                 my @possible = $self->get_completions($base);
@@ -335,92 +343,41 @@ package IPerl::Term {
                     $sugest = 1;
                     $extra = substr("@possible", 0, $self->{width});
                 }
-            } elsif ($c > 0 && $c < 27) {
-                #CTRL_{KEY}
-                my $key = sprintf("CTRL_%c", $c + 64);
-                my $callback = $self->{keybindings}->{$key} || next;
-                $callback->($c);
-            } elsif ($c == HOME_KEY) {
-                #go to start of line
-                $cindex = 0;
-                $c_y = 1;
-            } elsif ($c == END_KEY) {
-                #go to end of line
-                TO_END:
-                $cindex = length($buffer);
-                $c_y = int(($plen + length($buffer) + $self->{width} - 1) / $self->{width});
-                $c_y ++ if ($plen + $cindex) % $self->{width} == 0;
-            } elsif ($c == ARROW_UP) {
-                $buffer = $self->history_previous() || next;
-                $cindex = length($buffer);
-                $c_y = int(($plen + length($buffer) + $self->{width} - 1) / $self->{width});
-            } elsif ($c == ARROW_DOWN) {
-                $buffer = $self->history_next() || next;
-                $cindex = length($buffer);
-                $c_y = int(($plen + length($buffer) + $self->{width} - 1) / $self->{width});
-            } elsif ($c == ARROW_LEFT) {
-                #move cursor to the left
-                $c_y -- if $c_x == 1;
-                $cindex -- if $cindex;
-            } elsif ($c == ARROW_RIGHT) {
-                #move cursor to the right
-                $cindex ++ if $cindex < length($buffer);
-                $c_y ++ if $c_x == $self->{width};
-            } elsif ($c == BACKSPACE) {
-                #erase previous char
+            } elsif ($key > 0 && $key < 27) {
+                my $ctrl = sprintf("CTRL_%c", $key + 64);
+                my $callback = $self->{keybindings}->{$ctrl} || next;
+                $callback->($key);
+            } elsif ($key == BACKSPACE) {
                 substr($buffer, -- $cindex, 1) = "" if $cindex > 0;
                 $c_y -- if $c_x == 1;
-            } elsif ($c == DEL_KEY) {
-                #erase next char
+            } elsif ($key == DEL_KEY) {
                 $cindex ++ if $cindex < length($buffer);
                 substr($buffer, -- $cindex, 1) = "" if $cindex > 0;
             } else {
-                substr($buffer, $cindex ++, 0) = chr($c);
-                $c_y ++ if $c_x >= $self->{width};
+                substr($buffer, $cindex ++, 0) = chr($key);
+                $c_y ++ if $c_x >= $self->width();
             }
-            
-            #get the position of the cursor on the x axis
-            $c_x = ($plen + $cindex) % $self->{width} + 1;
-            #highlight the syntax and get the number of lines
+            $c_x = ($plen + $cindex) % $self->width() + 1;
             my ($nlines, $render) = $self->update_syntax($plen, $buffer);
-            #add 1 to down_y if we have an extra line for completion
-            $down_y += $sugest;
-            #get the cursor position
             my ($row, $col) = ($self->{pos_y} + $c_y, $self->{pos_x} + $c_x);
-            #if we are at the very end of the screen, print a newline
-            print "\r\n" if $row >= $self->{height};
-            #go to the last row used before
+            print "\r\n" if $row >= $self->height();
             my $printable = "\x1b[${down_y}B" if $down_y;
-            #clear every row, going up
-            $printable .= "\x1b[0G\x1b[0K\x1b[1A" x ($plines + $sugest);
-            #clear the current row and reset colors
+            $printable .= "\x1b[0G\x1b[0K\x1b[1A" x $plines;
             $printable .= "\x1b[0G\x1b[0K\x1b[0;1m";
-            #add the prompt
             $printable .= $prompt if $prompt;
-            #add the rendered buffer
             $printable .= $render;
-            #add the suggestions line if completing
-            $printable .= "\r\n$extra" if length($extra) > 0;
-            #position the cursor on the x axis
+            $printable .= "\x1b[0J";
+            $printable .= "\r\n$extra\x1b[1A" if length($extra) > 0;
             $printable .= "\x1b[${c_x}G";
-            #position the cursor on the y axis
-            my $up = $sugest + ($nlines - $c_y);
+            my $up = ($nlines - $c_y);
             $printable .= "\x1b[${up}A" if $up > 0;
-            #reset colors
             $printable .= "\x1b[0;1m";
-            #request cursor position
-            #$printable .= "\x1b[6n";
-            #
             $printable .= "\r\n" unless $reading;
-            #update the number of lines under the cursor
             $down_y = ($nlines - $c_y) + 1;
-            #update the number of lines previously used
             $plines = $nlines;
-            #reset extra to an empty string
             $extra = "";
-            #reset sugest to 0
+            $prevs = $sugest;
             $sugest = 0;
-            #print everything at once to avoid glitches
             print $printable;
         }
        
