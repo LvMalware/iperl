@@ -6,7 +6,7 @@ use lib './';
 use IPerl::Term;
 use IPerl::CodeExec;
 
-our $VERSION = "1.2";
+our $VERSION = "1.2.1";
 
 # Color sequences
 my $OFF     = "\033[0;1m";
