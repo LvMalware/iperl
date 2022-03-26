@@ -1,7 +1,7 @@
 # IPerl
 > Interactive Perl interpreter
 
-This is a simple REPL (Read, Execute, Print, Loop) script that aims to provide an easy and fun way to run a interactive Perl interpreter.
+This is a simple REPL (Read, Execute, Print, Loop) script that aims to provide an easy and fun way to run an interactive Perl interpreter.
 
 ## Dependencies
 - JSON
@@ -20,7 +20,7 @@ sudo ./install.sh
 
 Windows:
 
-Not implemented yet
+Switch to Linux and try the method above :)
 
 ## Usage
 
@@ -83,6 +83,9 @@ loadModule() can be used only inside the interactive interpreter and does basica
 Besides that, there is no advantage in using loadModule() instead of 'use' to load modules.
 
 ## Latest updates
+
+### Version 1.2.1
+- Fixed issues with IPerl::Term
 
 ### Version 1.2
 - Added syntax highlight
