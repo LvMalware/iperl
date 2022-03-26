@@ -1,20 +1,13 @@
 package IPerl::Term {
-
     use strict;
     use warnings;
-    use IO::Handle;
     use Term::Size;
     use Term::ReadKey;
-    use parent 'Exporter';
-
-    our @EXPORT = qw(
-        ctrl_key ARROW_UP ARROW_DOWN ARROW_RIGHT ARROW_LEFT BACKSPACE
-        HOME_KEY DEL_KEY PAGE_UP PAGE_DOWN END_KEY
-    );
 
     use constant {
-        TAB_KEY     => 9,
-        BACKSPACE   => 127,
+        TAB_KEY     => 0x09,
+        ESC_KEY     => 0x1b,
+        BACKSPACE   => 0x7f,
         ARROW_UP    => 300 + ord('A'),
         ARROW_DOWN  => 300 + ord('B'),
         ARROW_RIGHT => 300 + ord('C'),
@@ -22,82 +15,111 @@ package IPerl::Term {
         HOME_KEY    => 400 + ord('1'),
         DEL_KEY     => 400 + ord('3'),
         END_KEY     => 400 + ord('4'),
-        PAGE_UP     => 400 + ord('5'),
-        PAGE_DOWN   => 400 + ord('6'),
+        PG_UP       => 400 + ord('5'),
+        PG_DOWN     => 400 + ord('6'),
     };
 
     my @reserved_words = qw(
         abs and accept atan2 bind binmode break chomp chop chr close
-        closedir connect continue cos crypt  delete die do each eof eval
-        exec exists exit exp fc fileno flock for fork format getc getpeername
-        getsockname getsockopt grep hex if import index int join keys kill last
-        lc lcfirst length listen listModules loadModule lock long map my next
-        oct open or ord pack package pipe pop pos print printf push quotemeta
-        rand read readdir readline recv ref refreshModules require return
-        reverse rewinddir rindex say scalar searchModule seek seekdir select
-        send setsockopt shift shutdown sin socket socketpair sort splice split
-        sprintf sqrt srand study sub substr syscall sysread sysseek system
-        syswrite tell telldir truncate uc ucfirst unpack unshift use values
-        wait waitpid warn while write
+        closedir connect constant continue cos crypt  delete die do each eof
+        eval eq exec exists exit exp fc fileno flock for fork format getc
+        getpeername getsockname getsockopt grep hex if import index int join
+        keys kill last lc lcfirst length listen listModules loadModule lock
+        long map my ne next oct open or ord pack package pipe pop pos print
+        printf push quotemeta rand read readdir readline recv ref refreshModules
+        require return reverse rewinddir rindex say scalar searchModule seek
+        seekdir select send setsockopt shift shutdown sin socket socketpair sort
+        splice split sprintf sqrt srand study sub substr syscall sysread sysseek
+        system syswrite tell telldir truncate uc ucfirst unpack unshift use
+        values wait waitpid warn while write
     );
-
-    sub ctrl_key {
-        my ($key) = (@_);
-        ord($key) & 0x1F;
-    }
 
     sub new {
         my ($self, %args) = @_;
-        bless { 
+        bless {
+            raw     => 0,
             history => {
-                filename => $args{historyfile} || undef,
-                current  => undef,
-                lines    => [],
-                size     => 0,
+                filename    => $args{histfile} || undef,
+                current     => undef,
+                lines       => [],
+                size        => 0,
             },
-         }, $self;
+        }, $self;
     }
 
     sub bind_keys {
         my ($self, %bindings) = @_;
-        while (my ($key, $coderef) = each %bindings)
-        {
+        while (my ($key, $coderef) = each %bindings) {
+            next if $key eq "CTRL_T" || $key eq "CTRL_U" || $key eq "CTRL_D";
             $self->{keybindings}->{$key} = $coderef;
         }
     }
 
-    sub disable_raw_mode {
+    sub raw_mode {
         my ($self) = @_;
-        ReadMode 0;
+        ReadMode ($self->{raw} ^= 5);
+        unless ($SIG{WINCH}) {
+            $SIG{WINCH} = sub {
+                $self->update_term();
+            };
+            $self->update_term();
+        }
+    }
+
+    sub read_key {
+        my ($self) = @_;
+        READING:
+        my $key = ord(ReadKey(0));
+        if ($key == 0x1b) {
+            # escape sequence
+            my $a = ord(ReadKey(0)) || next;
+            my $b = ord(ReadKey(0)) || next;
+            if ($a == 0x5b) {
+                # [
+                if ($b >= 0x30 && $b <= 0x39) {
+                    my $c = ord(ReadKey(0)) || next;
+                    if ($c == 0x7e) {
+                        return HOME_KEY if $b == 0x31 || $b == 0x37;
+                        return END_KEY  if $b == 0x34 || $b == 0x38;
+                        return DEL_KEY  if $b == 0x33;
+                        return PG_DOWN  if $b == 0x36;
+                        return PG_UP    if $b == 0x35;
+                    } elsif (($c >= 0x30 && $c <= 0x39) || $c == 0x3b) {
+                        my $xy = chr($b) . chr($c);
+                        $xy .= ReadKey(0) until $xy =~ /(\d+);(\d+)R$/;
+                        if ($self) {
+                            $self->{cx} = $1;
+                            $self->{cy} = $2;
+                        }
+                        goto READING
+                    }
+                }
+                return ARROW_UP    if $b == 0x41;
+                return ARROW_DOWN  if $b == 0x42;
+                return ARROW_RIGHT if $b == 0x43;
+                return ARROW_LEFT  if $b == 0x44;
+                return END_KEY     if $b == 0x46;
+                return HOME_KEY    if $b == 0x48;
+            } elsif ($a == 0x4f) {
+                return END_KEY  if $b == 0x46;
+                return HOME_KEY if $b == 0x48;
+            }
+        }
+        $key
     }
 
     sub completion_array {
         my ($self, $arrayref) = @_;
-        $self->{completion_words} = $arrayref if $arrayref;
-        $self->{completion_words}
+        $self->{completions} = $arrayref if $arrayref;
+        $self->{completions}
     }
 
     sub get_completions {
         my ($self, $base) = @_;
         my $query = quotemeta($base || return undef);
-        my $array = $self->{completion_words} || [];
+        my $array = $self->{completions} || [];
         my @match = grep(/^$query/, @reserved_words, @{$array});
         @match
-    }
-
-    sub history_load {
-        my ($self, $filename) = @_;
-        $self->history_file($filename) || return 0;
-        open(my $hist, "<", $self->{history}->{filename}) || return 0;
-        while (my $line = <$hist>)
-        {
-            chomp($line);
-            next unless length($line);
-            $self->history_add($line);
-        }
-
-        close($hist);
-        1
     }
 
     sub history_file {
@@ -108,16 +130,11 @@ package IPerl::Term {
 
     sub history_save {
         my ($self, $filename) = @_;
-        
-        $self->history_file($filename) || return 0;
-        
-        open(my $hist, ">", $self->history_file($filename)) || return 0;
-        
-        for (my $i = 0; $i < $self->{history}->{size}; $i ++)
-        {
-            print $hist $self->{history}->{lines}->[$i], "\n";
+        open(my $hist, ">", $self->history_file($filename) || return 0);
+        return 0 unless $hist;
+        for my $line ($self->{history}->{lines}->@*) {
+            print $hist $line, "\n";
         }
-
         close($hist);
                 
         1;
@@ -128,100 +145,57 @@ package IPerl::Term {
         push @{ $self->{history}->{lines} }, $line;
         $self->{history}->{current} = ++ $self->{history}->{size};
     }
-    
-    sub history_previous {
-        my ($self) = @_;
-       
-        my $index = $self->{history}->{current};
-        return undef unless defined($index);
-        
-        if ($index == 0)
-        {
-            $self->{history}->{current} = $self->{history}->{size} - 1;
-            return undef;
+
+    sub history_load {
+        my ($self, $filename) = @_;
+        open(
+            my $hist, "<", $self->history_file($filename) || return 0
+        ) || return 0;
+        while (my $line = <$hist>) {
+            chomp($line);
+            next unless length($line);
+            $self->history_add($line);
         }
-        else
-        {
-            $self->{history}->{current} = -- $index;
-        }
-        
-        $self->{history}->{lines}->[$index];
+
+        close($hist);
+        1
     }
 
     sub history_next {
         my ($self) = @_;
-        my $index = $self->{history}->{current};
-        return undef if !defined($index);
+        my $index = $self->{history}->{current} || return undef;
         return undef if $index + 1 >= $self->{history}->{size};
         $self->{history}->{current} = ++ $index;
         $self->{history}->{lines}->[$index];
     }
 
-    sub readkey {
+    sub history_prev {
         my ($self) = @_;
-        READ_KEYS:
-        my $key = ord(ReadKey(0));
-        if ($key == 0x1b) #Escape sequence
-        {
-            my $s0 = ord(ReadKey(0)) || next;
-            my $s1 = ord(ReadKey(0)) || next;
-            if ($s0 == 0x5b) {  #[
-                if ($s1 >= 0x30 && $s1 <= 0x39) {
-                    my $s2 = ord(ReadKey(0)) || next;
-                    if ($s2 == 0x7e)
-                    {
-                        return HOME_KEY  if $s1 == 0x31 || $s1 == 0x37;
-                        return END_KEY   if $s1 == 0x34 || $s1 == 0x38;
-                        return DEL_KEY   if $s1 == 0x33;
-                        return PAGE_UP   if $s1 == 0x35;
-                        return PAGE_DOWN if $s1 == 0x36;
-                    }
-                    elsif (($s2 >= 0x30 && $s2 <= 0x39) || $s2 == 0x3b)
-                    {
-                        my $ans = chr($s1) . chr($s2);
-                        $ans .= ReadKey(0) until $ans =~ /(\d+);(\d+)R$/;
-                        if ($self)
-                        {
-                            $self->{pos_y} = $1;
-                            $self->{pos_x} = $2;
-                        }
-                        goto READ_KEYS
-                    }
-                }
-                else
-                {
-                    return ARROW_UP    if $s1 == 0x41; #A
-                    return ARROW_DOWN  if $s1 == 0x42; #B
-                    return ARROW_RIGHT if $s1 == 0x43; #C
-                    return ARROW_LEFT  if $s1 == 0x44; #D
-                    return END_KEY     if $s1 == 0x46; #F
-                    return HOME_KEY    if $s1 == 0x48; #H
-                }
-            }
-            elsif ($s0 == 0x4f) #O
-            {
-                return END_KEY if $s1 == 0x46;  #F
-                return HOME_KEY if $s1 == 0x48; #H
-            }
-        }
+        my $index = $self->{history}->{current} || return undef;
+        
+        if ($index == 0) {
+            $self->{history}->{current} = $self->{history}->{size} - 1;
+            return undef;
+        } 
 
-        return $key;
+        $self->{history}->{current} = -- $index;
+        $self->{history}->{lines}->[$index];
     }
 
-    sub update_syntax
+    sub CTRL_KEY {
+        sprintf("CTRL_%c", shift() + 0x40);
+    }
+
+    sub highlight_syntax 
     {
-        my ($self, $len, $code) = @_;
-        return (1, "") unless length($code);
+        my ($self, $code) = @_;
+        return "" unless length($code);
         my $render = "";
         my $lcolor = 0;
         my $in_str = 0;
         my $is_var = 0;
         my $in_com = 0;
         my $is_esc = 0;
-        my $nlines = 1;
-        my $width  = $self->width();
-        
-        $nlines = int(($len + length($code) + $width - 1) / $width);
 
         for my $word (split /\b{wb}/, $code)
         {
@@ -229,13 +203,19 @@ package IPerl::Term {
             my $w = quotemeta($word);
 
             if ($in_str) {
-                $ncolor = 32;
-                if ($word eq '\\') {
+                $ncolor = 36;
+                if ($is_var) {
+                    $is_var = 0;
+                    $ncolor = 35;
+                } elsif ($word eq '\\') {
                     $is_esc = 1
                 } elsif ($is_esc) {
                     $is_esc = 0;
                 } elsif ($word eq $in_str) {
                     $in_str = 0;
+                } elsif ($word eq '%' || $word eq '@' || $word eq '$') {
+                    $ncolor = 35;
+                    $is_var = 1;
                 }
             } elsif ($in_com) {
                 $ncolor = 30;
@@ -248,7 +228,7 @@ package IPerl::Term {
                 $ncolor = 34;
             } elsif ($word eq "'" or $word eq '"') {
                 $in_str = $word;
-                $ncolor = 32;
+                $ncolor = 36;
             } elsif ($word eq "#") {
                 $ncolor = 30;
                 $in_com = 1;
@@ -265,127 +245,145 @@ package IPerl::Term {
             $render .= $word;
         }
 
-        ($nlines, $render)
-    }
-
-    sub width {
-        my ($self) = @_;
-        $self->{width};
-    }
-
-    sub height {
-        my ($self) = @_;
-        $self->{height};
-    }
-
-    sub add_log {
-        my ($msg) = @_;
-        open(my $o, ">>log") || return;
-        print $o $msg, "\n";
-        close($o);
+        $render
     }
 
     sub readline {
         my ($self, $prompt) = @_;
-        my $plen   = length($prompt || '');
-        my $buffer = "";
-        my $plines = 1;
-        my $cindex = 0;
-        my $sugest = 0;
-        my $down_y = 1;
-        my $extra  = "";
-        my $prevs  = 0;
-        my $c_y    = 1;
-        my $c_x    = $plen;
-
-        $self->enable_raw_mode();
-        print "\x1b[6n";
-        print "\x1b[0;1m$prompt" if $prompt;
-
+        $prompt     = "" unless $prompt;
+        my $index   = 0;
+        my $buffer  = "";
         my $reading = 1;
+        my $prevrow = 0;
+        my $prevcol = 1;
+        my $prevsug = 0;
+        my $sugestions = "";
+        my $nl = 0;
+
+        $| = 1;
+        $self->raw_mode();
+        print "\x1b[6n\x1b[0;1m$prompt";
 
         while ($reading) {
-            my $key = $self->readkey();
-            if ($key == 0xa || $key == 0xd) {
-                $reading = 0;
-            } elsif ($key == END_KEY) {
-                $cindex = length($buffer);
-                $c_y = int(($plen + $cindex + $self->width() - 1) / $self->width());
-                $c_y ++ unless ($plen + $cindex) % $self->width();
-            } elsif ($key == HOME_KEY) {
-                $cindex = 0;
-                $c_y = 1;
-            } elsif ($key == ARROW_UP) {
-                $buffer = $self->history_previous() || next;
-                $cindex = length($buffer);
-                $c_y = int(($plen + length($buffer) + $self->width() - 1) / $self->width());
-            } elsif ($key == ARROW_DOWN) {
-                $buffer = $self->history_next() || next;
-                $cindex = length($buffer);
-                $c_y = int(($plen + length($buffer) + $self->width() - 1) / $self->width());
-            } elsif ($key == ARROW_LEFT) {
-                $c_y -- if $c_x == 1;
-                $cindex -- if $cindex;
-            } elsif ($key == ARROW_RIGHT) {
-                $cindex ++ if $cindex < length($buffer);
-                $c_y ++ if $c_x == $self->width();
-            } elsif ($key == TAB_KEY) {
-                my $base = (split(/\b{wb}/, substr($buffer, 0, $cindex)))[-1];
-                next unless $base;
-                my @possible = $self->get_completions($base);
-                if (@possible == 1)
-                {
-                    substr($buffer, $cindex - length($base), length($base)) = $possible[0];
-                    $cindex += length($possible[0]) - length($base);
-                }
-                elsif (@possible > 1)
-                {
-                    $sugest = 1;
-                    $extra = substr("@possible", 0, $self->{width});
-                }
-            } elsif ($key > 0 && $key < 27) {
-                my $ctrl = sprintf("CTRL_%c", $key + 64);
-                my $callback = $self->{keybindings}->{$ctrl} || next;
-                $callback->($key);
-            } elsif ($key == BACKSPACE) {
-                substr($buffer, -- $cindex, 1) = "" if $cindex > 0;
-                $c_y -- if $c_x == 1;
-            } elsif ($key == DEL_KEY) {
-                $cindex ++ if $cindex < length($buffer);
-                substr($buffer, -- $cindex, 1) = "" if $cindex > 0;
-            } else {
-                substr($buffer, $cindex ++, 0) = chr($key);
-                $c_y ++ if $c_x >= $self->width();
-            }
-            $c_x = ($plen + $cindex) % $self->width() + 1;
-            my ($nlines, $render) = $self->update_syntax($plen, $buffer);
-            my ($row, $col) = ($self->{pos_y} + $c_y, $self->{pos_x} + $c_x);
-            print "\r\n" if $row >= $self->height();
-            my $printable = "\x1b[${down_y}B" if $down_y;
-            $printable .= "\x1b[0G\x1b[0K\x1b[1A" x $plines;
-            $printable .= "\x1b[0G\x1b[0K\x1b[0;1m";
-            $printable .= $prompt if $prompt;
-            $printable .= $render;
-            $printable .= "\x1b[0J";
-            $printable .= "\r\n$extra\x1b[1A" if length($extra) > 0;
-            $printable .= "\x1b[${c_x}G";
-            my $up = ($nlines - $c_y);
-            $printable .= "\x1b[${up}A" if $up > 0;
-            $printable .= "\x1b[0;1m";
-            $printable .= "\r\n" unless $reading;
-            $down_y = ($nlines - $c_y) + 1;
-            $plines = $nlines;
-            $extra = "";
-            $prevs = $sugest;
-            $sugest = 0;
-            print $printable;
-        }
-       
-        disable_raw_mode();
-        
-        $self->history_add($buffer);
 
-        return $buffer;
+            my $printable = "";
+
+            my $k = $self->read_key() || next;
+
+            if ($k == 0x0a || $k == 0x0d) {
+                $reading = 0;
+            } elsif ($k == ARROW_LEFT) {
+                $index -- if $index > 0;
+            } elsif ($k == ARROW_RIGHT) {
+                $index ++ if $index < length($buffer);
+            } elsif ($k == BACKSPACE) {
+                substr($buffer, -- $index, 1) = "" if $index;
+            } elsif ($k == DEL_KEY) {
+                substr($buffer, $index, 1) = "" if $index < length($buffer);
+            } elsif ($k == ARROW_UP) {
+                $buffer = $self->history_prev() || next;
+                $index = length($buffer);
+            } elsif ($k == ARROW_DOWN) {
+                $buffer = $self->history_next() || next;
+                $index = length($buffer);
+            } elsif ($k == TAB_KEY) {
+                my $base = (split(/\b{wb}/, substr($buffer, 0, $index)))[-1];
+                unless ($base) {
+                    $buffer .= "    ";
+                    $index += 4;
+                } else {
+                    my @possible = $self->get_completions($base);
+                    if (@possible == 1) {
+                        substr($buffer, $index - length($base), length($base)) = $possible[0];
+                        $index += length($possible[0]) - length($base);
+                    } elsif (@possible > 1) {
+                        $sugestions = substr("@possible", 0, $self->{width});
+                    }
+                }
+            } elsif ($k == HOME_KEY) {
+                $index = 0;
+            } elsif ($k == END_KEY) {
+                $index = length($buffer);
+            } elsif ($k > 0 && $k < 27) {
+                my $ctrl = CTRL_KEY($k);
+                if ($ctrl eq 'CTRL_T') {
+                    next unless $index > 1;
+                    my $tmp = substr($buffer, $index - 1, 1);
+                    substr($buffer, $index - 1, 1) = substr($buffer, $index - 2, 1);
+                    substr($buffer, $index - 2, 1) = $tmp;
+                } elsif ($ctrl eq 'CTRL_U') {
+                    $buffer = "";
+                    $index = 0;
+                } elsif ($ctrl eq 'CTRL_D') {
+                    $reading = 0;
+                } else {
+                    my $callback = $self->{keybindings} || next;
+                    $callback = $callback->{$ctrl} || next;
+                    $callback->()
+                }
+            } else {
+                substr($buffer, $index ++, 0) = chr($k);
+            }
+
+            my $w = $self->width();
+            my $h = $self->height();
+            my $x = (length($prompt) + $index) % $w + 1;
+            my $y = int((length($prompt) + $index + $w - 1) / $w);
+            my $l = int((length($prompt) + length($buffer) + $w - 1) / $w);
+            my $r = $self->{cy} + $l;
+
+            if (($prevrow - $y) > 0 && $index != 0) {
+                $printable .= "\x1b[1B" x ($prevrow - $y);
+            }
+
+            if ($nl || ($x == 2 && $x > $prevcol)) {
+                $printable .= "\x1b[1A";
+            }
+
+            $nl = 0;
+
+            my $render = $self->highlight_syntax($buffer);
+            $printable .= "\x1b[0G\x1b[0K\x1b[1A" x $prevrow;
+            $printable .= "\x1b[0G\x1b[0K\x1b[0;1m${prompt}${render}";
+            if ($r >= $h || (length($prompt) + $index) % $w == 0) {
+                $printable .= "\n";
+                $l ++;
+                $nl = 1;
+            }
+
+            if ($sugestions || $prevsug) {
+                $printable .= "\r\n\x1b[0;1m\x1b[0K$sugestions";
+                $sugestions = "";
+                $prevsug = 1 - $prevsug;
+                $l ++;
+            }
+
+            $printable .= "\x1b[${x}G";
+
+            if ($reading && ($l - ($y + $nl) > 0)) {
+                $printable .= "\x1b[1A" x ($l - ($y + $nl));
+            }
+
+            print $printable;
+
+            $prevrow = $y - 1;
+            $prevcol = $x;
+        }
+
+        $self->raw_mode();
+        print "\r\n";
+        $self->history_add($buffer);
+        $buffer
+    }
+
+    sub width {
+        my ($self) = @_;
+        $self->{width}
+    }
+
+    sub height {
+        my ($self) = @_;
+        $self->{height}
     }
 
     sub update_term {
@@ -393,19 +391,10 @@ package IPerl::Term {
         ($self->{width}, $self->{height}) = Term::Size::chars *STDOUT{IO};
     }
 
-    sub enable_raw_mode {
-        my ($self) = @_;
-        $self->update_term();
-        $SIG{WINCH} = sub {
-            $self->update_term();
-        };
-        ReadMode 5;
-    }
-    
     END {
         print "\r\n";
-        disable_raw_mode();
+        ReadMode 0;
     }
-
 }
+
 1;
