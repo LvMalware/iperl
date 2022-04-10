@@ -47,7 +47,7 @@ sub new
             close $file;
         }
     }
-    my $term    = IPerl::Term->new(historyfile => $history);
+    my $term    = IPerl::Term->new(histfile => $history);
     $term->history_load();
     bless {
         path => $path, prompt => $prompt, history => $history,
@@ -148,8 +148,6 @@ sub run {
         }
         #add user-defined function names to the completion list
         $self->add_completion(map { $1 } $block =~ /sub ([\d\w_]+)/g);
-        #save the history at each command
-        $term->history_save();
         #evaluate the user code on a different scope to avoid conflicts with
         #identifiers of the IPerl internal code
         my ($output, $error, $warning) = IPerl::CodeExec::__evaluate($block);

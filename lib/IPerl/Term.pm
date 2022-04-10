@@ -1,6 +1,7 @@
 package IPerl::Term {
     use strict;
     use warnings;
+    use IO::File;
     use Term::Size;
     use Term::ReadKey;
 
@@ -43,6 +44,7 @@ package IPerl::Term {
                 current     => undef,
                 lines       => [],
                 size        => 0,
+                file        => 0,
             },
         }, $self;
     }
@@ -130,11 +132,14 @@ package IPerl::Term {
 
     sub history_save {
         my ($self, $filename) = @_;
-        open(my $hist, ">", $self->history_file($filename) || return 0);
-        return 0 unless $hist;
+        $filename = $self->history_file($filename);
+        unless (my $hist = $self->{history}->{file}) {
+            open($hist, ">", $filename);
+        }
         for my $line ($self->{history}->{lines}->@*) {
             print $hist $line, "\n";
         }
+
         close($hist);
                 
         1;
@@ -144,20 +149,20 @@ package IPerl::Term {
         my ($self, $line) = @_;
         push @{ $self->{history}->{lines} }, $line;
         $self->{history}->{current} = ++ $self->{history}->{size};
+        my $hist = $self->{history}->{file} || return 0;
+        print $hist $line, "\n";
     }
 
     sub history_load {
         my ($self, $filename) = @_;
-        open(
-            my $hist, "<", $self->history_file($filename) || return 0
-        ) || return 0;
+        $filename = $self->history_file($filename) || return 0;
+        my $hist = IO::File->new($filename, "a+") || return 0;
         while (my $line = <$hist>) {
             chomp($line);
             next unless length($line);
             $self->history_add($line);
         }
-
-        close($hist);
+        $self->{history}->{file} = $hist;
         1
     }
 
