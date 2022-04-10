@@ -133,8 +133,9 @@ package IPerl::Term {
     sub history_save {
         my ($self, $filename) = @_;
         $filename = $self->history_file($filename);
-        unless (my $hist = $self->{history}->{file}) {
-            open($hist, ">", $filename);
+        my $hist = $self->{history}->{file};
+        unless ($hist) {
+            open($hist, ">", $filename) || return 0;
         }
         for my $line ($self->{history}->{lines}->@*) {
             print $hist $line, "\n";

@@ -53,6 +53,7 @@ sub loadModule
         \@$module\:\:EXPORT
 USE
         print "[!] Can't load module $module\n" if $@;
+        $IPERL_INSTANCE->add_completion($module);
         $IPERL_INSTANCE->add_completion(@export) if $IPERL_INSTANCE && @export;
     }
 }
